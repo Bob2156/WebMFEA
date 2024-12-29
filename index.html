@@ -13,20 +13,61 @@
     h1 {
       color: #0070f3;
     }
-    p {
-      font-size: 18px;
-      color: #333;
-    }
-    footer {
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #0070f3;
+      color: white;
       margin-top: 20px;
-      font-size: 14px;
-      color: #777;
+    }
+    .result {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+    .error {
+      color: red;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
   <h1>MFEA TESTING</h1>
-  <p>Welcome to the MFEA testing webpage! This is a simple starting point for your project.</p>
-  <footer>Created with ❤️ by MFEA</footer>
+  <p>Click the button below to fetch market data for S&P 500, Treasury Bills, and Total World Stock Index.</p>
+  <button id="fetchDataBtn">Fetch Market Data</button>
+  <div class="result" id="result"></div>
+  <div class="error" id="error"></div>
+
+  <script>
+    document.getElementById("fetchDataBtn").addEventListener("click", async () => {
+      const resultDiv = document.getElementById("result");
+      const errorDiv = document.getElementById("error");
+      resultDiv.innerHTML = "Loading...";
+      errorDiv.innerHTML = "";
+
+      try {
+        // Call the API endpoint
+        const response = await fetch("/api/fetchData");
+        const data = await response.json();
+
+        if (response.ok) {
+          resultDiv.innerHTML = `
+            <p><strong>S&P 500:</strong> $${data.sp500}</p>
+            <p><strong>3-Month Treasury Bill Rate:</strong> ${data.treasuryBillRate}%</p>
+            <p><strong>Total World Stock Index:</strong> $${data.totalWorldStock}</p>
+          `;
+        } else {
+          errorDiv.innerHTML = `Error: ${data.error || "Failed to fetch data"}`;
+        }
+      } catch (error) {
+        errorDiv.innerHTML = "Failed to fetch data. Please try again.";
+        console.error(error);
+      } finally {
+        resultDiv.innerHTML = "";
+      }
+    });
+  </script>
 </body>
 </html>
