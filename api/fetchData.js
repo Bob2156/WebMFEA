@@ -1,12 +1,16 @@
-export default function handler(req, res) {
+export default async function handler(req, res) {
   try {
-    // Generate a random S&P 500 price between 4000 and 5000
-    const randomPrice = (Math.random() * 1000 + 4000).toFixed(2);
+    // Fetch data for S&P 500 from Yahoo Finance
+    const response = await fetch("https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC");
+    const data = await response.json();
 
-    // Return the randomized value
-    res.status(200).json({ sp500: randomPrice });
+    // Extract the current price
+    const sp500Price = data.chart.result[0].meta.regularMarketPrice;
+
+    // Return the actual S&P 500 value
+    res.status(200).json({ sp500: sp500Price });
   } catch (error) {
-    console.error("Error in API function:", error);
-    res.status(500).json({ error: "Failed to process the request" });
+    console.error("Error fetching actual data:", error);
+    res.status(500).json({ error: "Failed to fetch S&P 500 data" });
   }
 }
