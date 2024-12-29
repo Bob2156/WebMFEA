@@ -1,16 +1,12 @@
 export default async function handler(req, res) {
   try {
-    // Fetch data for S&P 500 (^GSPC)
-    const response = await fetch("https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC");
-    const data = await response.json();
+    // Simulate fetching S&P 500 data by generating a random value
+    const simulatedPrice = (Math.random() * 1000 + 4000).toFixed(2); // Random value between 4000 and 5000
 
-    // Extract the latest price
-    const sp500Price = data.chart.result[0].meta.regularMarketPrice;
-
-    // Respond with the data
-    res.status(200).json({ sp500: sp500Price });
+    // Respond with the simulated value
+    res.status(200).json({ sp500: simulatedPrice });
   } catch (error) {
-    console.error("Error fetching S&P 500 data:", error);
-    res.status(500).json({ error: "Failed to fetch S&P 500 data" });
+    console.error("Error in serverless function:", error);
+    res.status(500).json({ error: "Failed to fetch simulated data" });
   }
 }
