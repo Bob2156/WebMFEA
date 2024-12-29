@@ -35,8 +35,8 @@
 </head>
 <body>
   <h1>MFEA TESTING</h1>
-  <p>Click the button below to fetch market data for S&P 500, Treasury Bills, and Total World Stock Index.</p>
-  <button id="fetchDataBtn">Fetch Market Data</button>
+  <p>Click the button below to fetch the latest S&P 500 data.</p>
+  <button id="fetchDataBtn">Fetch S&P 500 Data</button>
   <div class="result" id="result"></div>
   <div class="error" id="error"></div>
 
@@ -49,15 +49,11 @@
 
       try {
         // Call the API endpoint
-        const response = await fetch("/api/fetchData");
+        const response = await fetch("/api/sp500");
         const data = await response.json();
 
         if (response.ok) {
-          resultDiv.innerHTML = `
-            <p><strong>S&P 500:</strong> $${data.sp500}</p>
-            <p><strong>3-Month Treasury Bill Rate:</strong> ${data.treasuryBillRate}%</p>
-            <p><strong>Total World Stock Index:</strong> $${data.totalWorldStock}</p>
-          `;
+          resultDiv.innerHTML = `<p><strong>S&P 500:</strong> $${data.sp500}</p>`;
         } else {
           errorDiv.innerHTML = `Error: ${data.error || "Failed to fetch data"}`;
         }
