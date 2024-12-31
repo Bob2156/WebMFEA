@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MFEA TESTING</title>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -23,6 +25,13 @@
       font-size: 16px;
       border: 2px solid #0070f3;
       border-radius: 5px;
+    }
+    select {
+      padding: 10px;
+      font-size: 16px;
+      border: 2px solid #0070f3;
+      border-radius: 5px;
+      margin-left: 10px;
     }
     button {
       padding: 10px 20px;
@@ -47,20 +56,40 @@
       color: red;
       margin-top: 20px;
     }
+    /* Responsive Chart */
+    #chartContainer {
+      width: 80%;
+      max-width: 800px;
+      margin: 40px auto;
+    }
   </style>
 </head>
 <body>
   <h1>MFEA TESTING</h1>
   <div class="search-container">
     <input type="text" id="tickerInput" placeholder="Enter Ticker Symbol (e.g., AAPL)" />
+    <select id="rangeSelect">
+      <option value="1d">1 Day</option>
+      <option value="1mo">1 Month</option>
+      <option value="1y">1 Year</option>
+      <option value="3y">3 Years</option>
+      <option value="10y">10 Years</option>
+    </select>
     <button id="searchBtn">Search</button>
   </div>
   <div class="result" id="result"></div>
   <div class="error" id="error"></div>
 
+  <div id="chartContainer">
+    <canvas id="stockChart"></canvas>
+  </div>
+
   <script>
+    let stockChart; // To hold the Chart.js instance
+
     document.getElementById("searchBtn").addEventListener("click", async () => {
       const ticker = document.getElementById("tickerInput").value.trim().toUpperCase();
+      const range = document.getElementById("rangeSelect").value;
       const resultDiv = document.getElementById("result");
       const errorDiv = document.getElementById("error");
 
@@ -77,8 +106,8 @@
         // Show loading message
         resultDiv.innerHTML = "Loading...";
 
-        // Fetch data from the API with the ticker as a query parameter
-        const response = await fetch(`/api/fetchData?ticker=${encodeURIComponent(ticker)}`);
+        // Fetch data from the API with the ticker and range as query parameters
+        const response = await fetch(`/api/fetchData?ticker=${encodeURIComponent(ticker)}&range=${encodeURIComponent(range)}`);
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -87,16 +116,115 @@
 
         const data = await response.json();
 
-        // Display the fetched data
+        // Display the fetched current price
         resultDiv.innerHTML = `
           <p><strong>Ticker:</strong> ${data.ticker}</p>
           <p><strong>Current Price:</strong> ${data.currentPrice}</p>
         `;
+
+        // Prepare data for Chart.js
+        const labels = data.historicalData.map(entry => entry.date);
+        const prices = data.historicalData.map(entry => entry.price);
+
+        // If a chart already exists, destroy it before creating a new one
+        if (stockChart) {
+          stockChart.destroy();
+        }
+
+        const ctx = document.getElementById('stockChart').getContext('2d');
+        stockChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: `${data.ticker} Price`,
+              data: prices,
+              borderColor: '#0070f3',
+              backgroundColor: 'rgba(0, 112, 243, 0.1)',
+              borderWidth: 2,
+              pointRadius: 0, // Remove points for a cleaner line
+              fill: true,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: 'index',
+              intersect: false,
+            },
+            plugins: {
+              legend: {
+                display: true,
+                labels: {
+                  color: '#333',
+                  font: {
+                    size: 14,
+                  }
+                }
+              },
+              tooltip: {
+                enabled: true,
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                  label: function(context) {
+                    return ` $${context.parsed.y.toFixed(2)}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                display: true,
+                title: {
+                  display: true,
+                  text: 'Date',
+                  color: '#333',
+                  font: {
+                    size: 16,
+                  }
+                },
+                ticks: {
+                  maxTicksLimit: 10,
+                  color: '#333',
+                },
+                grid: {
+                  display: false,
+                }
+              },
+              y: {
+                display: true,
+                title: {
+                  display: true,
+                  text: 'Price ($)',
+                  color: '#333',
+                  font: {
+                    size: 16,
+                  }
+                },
+                ticks: {
+                  color: '#333',
+                },
+                grid: {
+                  color: 'rgba(0,0,0,0.1)',
+                }
+              }
+            }
+          }
+        });
+
       } catch (error) {
         // Show error message if something goes wrong
         errorDiv.innerHTML = `Error: ${error.message}`;
         console.error("Error fetching data:", error);
         resultDiv.innerHTML = "";
+        
+        // Destroy existing chart if error occurs
+        if (stockChart) {
+          stockChart.destroy();
+          stockChart = null;
+        }
       }
     });
 
