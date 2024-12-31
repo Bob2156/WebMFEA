@@ -56,12 +56,39 @@
       color: red;
       margin-top: 20px;
     }
-    /* Responsive Chart */
+    /* Enhanced Responsive Chart */
     #chartContainer {
       width: 90%;
       max-width: 1000px;
-      height: 500px; /* Increased height for better visibility */
+      height: 700px; /* Increased height for vertical elongation */
       margin: 40px auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    canvas {
+      /* Ensure the canvas fills the container */
+      width: 100% !important;
+      height: 100% !important;
+    }
+    /* Help Section Styling */
+    .help-section {
+      margin-top: 40px;
+      text-align: left;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .help-section h2 {
+      color: #0070f3;
+    }
+    .help-section ul li {
+      padding: 5px 0;
     }
   </style>
 </head>
@@ -83,6 +110,19 @@
 
   <div id="chartContainer">
     <canvas id="stockChart"></canvas>
+  </div>
+
+  <div class="help-section">
+    <h2>How to Use</h2>
+    <p>Enter a valid stock ticker symbol (e.g., AAPL, GOOGL) and select a timeframe to view the current price and historical chart.</p>
+    <p><strong>Available Timeframes:</strong></p>
+    <ul style="list-style: none; padding: 0;">
+      <li>1 Day</li>
+      <li>1 Month</li>
+      <li>1 Year</li>
+      <li>3 Years</li>
+      <li>10 Years</li>
+    </ul>
   </div>
 
   <script>
@@ -170,7 +210,7 @@
                 intersect: false,
                 callbacks: {
                   label: function(context) {
-                    return ` $${context.parsed.y.toFixed(2)}`;
+                    return ` $${parseFloat(context.parsed.y).toFixed(2)}`;
                   }
                 }
               }
@@ -208,9 +248,11 @@
                 },
                 ticks: {
                   color: '#333',
+                  // Chart.js handles dynamic scaling
                 },
                 grid: {
                   color: 'rgba(0,0,0,0.1)',
+                  borderDash: [5, 5], // Dashed grid lines for better readability
                 }
               }
             }
