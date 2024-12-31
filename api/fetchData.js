@@ -1,15 +1,21 @@
 // api/fetchData.js
 
+// Import necessary modules (if using Node.js environment)
+// For Vercel serverless functions, ensure you have the appropriate setup.
+// If you're using Next.js, adjust accordingly.
+
 export default async function handler(req, res) {
   if (req.method !== "GET") {
-    res.status(405).json({ error: "Method Not Allowed" });
+    res.status(405).json({ error: "Method Not Allowed. Use GET." });
     return;
   }
 
   const { ticker, range } = req.query;
 
-  if (!ticker) {
-    res.status(400).json({ error: "Ticker symbol is required." });
+  // Validate ticker parameter
+  const validTickerRegex = /^[A-Z]{1,5}$/; // Ticker symbols typically 1-5 uppercase letters
+  if (!ticker || !validTickerRegex.test(ticker)) {
+    res.status(400).json({ error: "Invalid or missing ticker symbol. Please enter a valid uppercase ticker (e.g., AAPL)." });
     return;
   }
 
@@ -31,7 +37,7 @@ export default async function handler(req, res) {
     const tickerResponse = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=${interval}&range=${yahooRange}`);
 
     if (!tickerResponse.ok) {
-      throw new Error("Failed to fetch data from Yahoo Finance.");
+      throw new Error("Failed to fetch data from Yahoo Finance. Please check the ticker symbol and try again.");
     }
 
     const tickerData = await tickerResponse.json();
@@ -46,7 +52,7 @@ export default async function handler(req, res) {
     }
 
     // Extract current price
-    const currentPrice = tickerData.chart.result[0].meta.regularMarketPrice.toFixed(2);
+    const currentPrice = parseFloat(tickerData.chart.result[0].meta.regularMarketPrice).toFixed(2);
 
     // Extract historical prices and timestamps
     const timestamps = tickerData.chart.result[0].timestamp;
@@ -75,26 +81,58 @@ export default async function handler(req, res) {
     // Prepare historical data for Chart.js
     const historicalData = timestamps.map((timestamp, index) => {
       const dateObj = new Date(timestamp * 1000);
-      // Format date based on range
       let dateLabel = '';
+
       if (selectedRange === '1d' || selectedRange === '1mo') {
         // Include time for intraday data
-        dateLabel = dateObj.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        dateLabel = dateObj.toLocaleString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
       } else {
         // Only date for daily and longer intervals
-        dateLabel = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        dateLabel = dateObj.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        });
       }
+
       return {
         date: dateLabel,
         price: prices[index],
       };
     });
 
+    // Optional: Aggregate data for longer ranges to reduce data points
+    let aggregatedData = historicalData;
+    if (selectedRange === '10y') {
+      // Aggregate monthly averages for 10-year data
+      const monthlyMap = {};
+      historicalData.forEach(entry => {
+        const month = entry.date.slice(0, 7); // 'Sep 2020'
+        if (!monthlyMap[month]) {
+          monthlyMap[month] = [];
+        }
+        monthlyMap[month].push(entry.price);
+      });
+
+      aggregatedData = Object.keys(monthlyMap).map(month => {
+        const avgPrice = monthlyMap[month].reduce((sum, p) => sum + p, 0) / monthlyMap[month].length;
+        return {
+          date: month,
+          price: parseFloat(avgPrice).toFixed(2),
+        };
+      });
+    }
+
     // Return the current price and historical data
     res.status(200).json({
       ticker: ticker.toUpperCase(),
       currentPrice: `$${currentPrice}`,
-      historicalData: historicalData,
+      historicalData: aggregatedData,
       selectedRange: selectedRange,
     });
   } catch (error) {
@@ -102,3 +140,4 @@ export default async function handler(req, res) {
     res.status(500).json({ error: error.message || "Failed to fetch financial data." });
   }
 }
+
