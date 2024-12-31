@@ -50,18 +50,45 @@ export default async function handler(req, res) {
 
     // Extract historical prices and timestamps
     const timestamps = tickerData.chart.result[0].timestamp;
-    const adjClose = tickerData.chart.result[0].indicators.adjclose[0].adjclose;
+    let prices = [];
+
+    // Determine if adjclose is available
+    if (
+      tickerData.chart.result[0].indicators.adjclose &&
+      tickerData.chart.result[0].indicators.adjclose[0].adjclose
+    ) {
+      prices = tickerData.chart.result[0].indicators.adjclose[0].adjclose;
+    } else if (
+      tickerData.chart.result[0].indicators.quote &&
+      tickerData.chart.result[0].indicators.quote[0].close
+    ) {
+      prices = tickerData.chart.result[0].indicators.quote[0].close;
+    } else {
+      throw new Error("Price data is unavailable.");
+    }
 
     // Handle missing data
-    if (!timestamps || !adjClose || timestamps.length !== adjClose.length) {
+    if (!timestamps || !prices || timestamps.length !== prices.length) {
       throw new Error("Incomplete historical data.");
     }
 
     // Prepare historical data for Chart.js
-    const historicalData = timestamps.map((timestamp, index) => ({
-      date: new Date(timestamp * 1000).toLocaleDateString(),
-      price: adjClose[index],
-    }));
+    const historicalData = timestamps.map((timestamp, index) => {
+      const dateObj = new Date(timestamp * 1000);
+      // Format date based on range
+      let dateLabel = '';
+      if (selectedRange === '1d' || selectedRange === '1mo') {
+        // Include time for intraday data
+        dateLabel = dateObj.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      } else {
+        // Only date for daily and longer intervals
+        dateLabel = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      }
+      return {
+        date: dateLabel,
+        price: prices[index],
+      };
+    });
 
     // Return the current price and historical data
     res.status(200).json({
