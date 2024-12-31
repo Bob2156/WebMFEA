@@ -58,8 +58,9 @@
     }
     /* Responsive Chart */
     #chartContainer {
-      width: 80%;
-      max-width: 800px;
+      width: 90%;
+      max-width: 1000px;
+      height: 500px; /* Increased height for better visibility */
       margin: 40px auto;
     }
   </style>
@@ -188,6 +189,8 @@
                 ticks: {
                   maxTicksLimit: 10,
                   color: '#333',
+                  maxRotation: 0,
+                  minRotation: 0,
                 },
                 grid: {
                   display: false,
@@ -219,7 +222,7 @@
         errorDiv.innerHTML = `Error: ${error.message}`;
         console.error("Error fetching data:", error);
         resultDiv.innerHTML = "";
-        
+
         // Destroy existing chart if error occurs
         if (stockChart) {
           stockChart.destroy();
